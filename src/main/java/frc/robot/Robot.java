@@ -4,7 +4,15 @@
 
 package frc.robot;
 
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkLowLevel.MotorType;
+
+// import com.revrobotics.CANSparkMax;
+// import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
+import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -20,6 +28,18 @@ public class Robot extends TimedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
+  //Define the motors
+  private static CANSparkMax leftMotor1 = new CANSparkMax(1, MotorType.kBrushless);
+  private static CANSparkMax leftMotor2 = new CANSparkMax(2, MotorType.kBrushless);
+  private static CANSparkMax rightMotor1 = new CANSparkMax(3, MotorType.kBrushless);
+  private static CANSparkMax rightMotor2 = new CANSparkMax(4, MotorType.kBrushless);
+
+  //private static GenericHID leftJoystick = new GenericHID(0);
+  //private static GenericHID rightJoystick = new GenericHID(1); 
+  private static GenericHID logitechJoystick = new GenericHID(2);
+
+  // leftMotor1 and rightMotor1 are the leader motors
+  private DifferentialDrive diffDrive = new DifferentialDrive(leftMotor1, rightMotor1);
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -29,6 +49,14 @@ public class Robot extends TimedRobot {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
+
+    //Motor 2 will always follow Motor 1
+    //Don't ever tell Motor 2 to drive!
+    leftMotor1.setInverted(true);
+    leftMotor2.follow(leftMotor1);
+    rightMotor2.follow(rightMotor1);
+
+    
   }
 
   /**
@@ -78,7 +106,13 @@ public class Robot extends TimedRobot {
 
   /** This function is called periodically during operator control. */
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+
+    double xSpeed = Math.pow(logitechJoystick.getRawAxis(1), 3);
+    double zSpeed = Math.pow(logitechJoystick.getRawAxis(4), 3);
+    diffDrive.arcadeDrive(xSpeed, zSpeed);
+
+  }
 
   /** This function is called once when the robot is disabled. */
   @Override
