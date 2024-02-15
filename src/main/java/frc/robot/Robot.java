@@ -13,13 +13,11 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkAbsoluteEncoder;
-import com.revrobotics.SparkRelativeEncoder;
+import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.PowerDistribution;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -32,12 +30,13 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * project.
  */
 public class Robot extends LoggedRobot {
+
+  private Drive drive = new Drive();
   private static final String kDefaultAuto = "Default";
-  private static final String crossTheLine = "My Auto";
+  private static final String crossTheLine = "crossTheLine";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
-  private final Timer timer = new Timer();
   //Define the motors
   private static CANSparkMax leftMotor1 = new CANSparkMax(1, MotorType.kBrushless);
   private static CANSparkMax leftMotor2 = new CANSparkMax(2, MotorType.kBrushless);
@@ -52,7 +51,7 @@ public class Robot extends LoggedRobot {
   //private static GenericHID rightJoystick = new GenericHID(1); 
   private static GenericHID logitechJoystick = new GenericHID(2);
 
-  private static final double gearReduction = 10.73;
+  private static final double gearReduction = 8.45;
   private static final double circumferenceMeters = Math.PI * 0.1016;
 
   // leftMotor1 and rightMotor1 are the leader motors
@@ -81,14 +80,19 @@ public class Robot extends LoggedRobot {
     Logger.start(); // Start logging! No more data receivers, replay sources, or metadata values may be added.
 
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
-    m_chooser.addOption("My Auto", crossTheLine);
+    m_chooser.addOption("crossTheLine", crossTheLine);
     SmartDashboard.putData("Auto choices", m_chooser);
 
     leftMotor1.restoreFactoryDefaults();
     leftMotor2.restoreFactoryDefaults();
     rightMotor1.restoreFactoryDefaults();
     rightMotor2.restoreFactoryDefaults();
-    
+
+    leftMotor1.setIdleMode(IdleMode.kBrake);
+    leftMotor2.setIdleMode(IdleMode.kBrake);
+    rightMotor1.setIdleMode(IdleMode.kBrake);
+    rightMotor2.setIdleMode(IdleMode.kBrake);
+
     //Motor 2 will always follow Motor 1
     //Don't ever tell Motor 2 to drive!
     leftMotor1.setInverted(true);
@@ -124,6 +128,7 @@ public class Robot extends LoggedRobot {
     m_autoSelected = m_chooser.getSelected();
     // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
     System.out.println("Auto selected: " + m_autoSelected);
+    leftEncoder.setPosition(0);
   }
 
   /** This function is called periodically during autonomous. */
@@ -132,6 +137,7 @@ public class Robot extends LoggedRobot {
     switch (m_autoSelected) {
       case crossTheLine:
         // Put custom auto code here
+        SmartDashboard.putNumber("Left Encoder", leftEncoder.getPosition());
         
         if(leftEncoder.getPosition() < 1){
           diffDrive.arcadeDrive(.5, 0);
@@ -149,7 +155,8 @@ public class Robot extends LoggedRobot {
 
   /** This function is called once when teleop is enabled. */
   @Override
-  public void teleopInit() {}
+  public void teleopInit() {
+  }
 
   /** This function is called periodically during operator control. */
   @Override
@@ -159,6 +166,7 @@ public class Robot extends LoggedRobot {
     double zSpeed = Math.pow(logitechJoystick.getRawAxis(4), 3);
     
     diffDrive.arcadeDrive(xSpeed, zSpeed);
+    SmartDashboard.putNumber("Left Encoder", leftEncoder.getPosition());
 
   }
 
