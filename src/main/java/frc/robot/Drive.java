@@ -14,15 +14,18 @@ import com.revrobotics.SparkPIDController;
 import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelPositions;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.SerialPort;
-import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -46,6 +49,8 @@ public class Drive extends SubsystemBase {
     private static double integralGain = 0;
     private static double derivativeGain = 0;
 
+    private ChassisSpeeds desiredChassisSpeeds;
+
     AHRS gyro;
 
     private Field2d field = new Field2d();
@@ -56,6 +61,16 @@ public class Drive extends SubsystemBase {
 
     SparkPIDController leftPID;
     SparkPIDController rightPID;
+
+    private final DifferentialDrivePoseEstimator poseEstimator =
+        new DifferentialDrivePoseEstimator(
+            kinematics, gyro.getRotation2d(), 
+            leftEncoder.getPosition() * positionConversionFactor, 
+            rightEncoder.getPosition() * positionConversionFactor, 
+            new Pose2d(),
+            VecBuilder.fill(0.05, 0.05, Units.degreesToRadians(5)),
+            VecBuilder.fill(0.5, 0.5, Units.degreesToRadians(30))
+            );
 
     public Drive(){
         leftFront = new CANSparkMax(1, MotorType.kBrushless);
@@ -111,8 +126,19 @@ public class Drive extends SubsystemBase {
                     return alliance.get() == DriverStation.Alliance.Red;
                 }
                 return false;
-                }, 
-            this);        
+                },
+            this);
+    }
+
+    @Override
+    public void periodic(){
+        poseEstimator.update(
+            gyro.getRotation2d(), 
+            leftEncoder.getPosition() * positionConversionFactor,
+            rightEncoder.getPosition() * positionConversionFactor);
+
+    field.setRobotPose(getCurrentPose());
+
     }
 
     private void configureSparkMax(CANSparkMax motor){
@@ -131,8 +157,16 @@ public class Drive extends SubsystemBase {
         return gyro.getAngle();
     }
 
+    public Rotation2d getGyroRotation2d(){
+        return gyro.getRotation2d();
+    }
+
     public Pose2d getPose(){
         return odometry.getPoseMeters();
+    }
+
+    public Pose2d getCurrentPose(){
+        return poseEstimator.getEstimatedPosition();
     }
 
     public void resetPose(Pose2d pose){

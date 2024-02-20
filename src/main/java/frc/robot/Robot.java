@@ -16,10 +16,13 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.PWM;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -65,6 +68,7 @@ public class Robot extends LoggedRobot {
   public void robotInit() {
     Logger.recordMetadata("ProjectName", "8424-2024-Code"); // Set a metadata value
 
+    
     if (isReal()) {
         Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
         Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
@@ -126,7 +130,6 @@ public class Robot extends LoggedRobot {
   @Override
   public void autonomousInit() {
     m_autoSelected = m_chooser.getSelected();
-    // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
     System.out.println("Auto selected: " + m_autoSelected);
     leftEncoder.setPosition(0);
   }
@@ -161,13 +164,14 @@ public class Robot extends LoggedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-
-    double xSpeed = Math.pow(logitechJoystick.getRawAxis(1), 3);
-    double zSpeed = Math.pow(logitechJoystick.getRawAxis(4), 3);
-    
-    diffDrive.arcadeDrive(xSpeed, zSpeed);
     SmartDashboard.putNumber("Left Encoder", leftEncoder.getPosition());
 
+    drive.driveRobot(
+      ChassisSpeeds.fromFieldRelativeSpeeds(
+        logitechJoystick.getRawAxis(1),
+        0,
+        logitechJoystick.getRawAxis(2),
+        drive.getGyroRotation2d()));
   }
 
   /** This function is called once when the robot is disabled. */
