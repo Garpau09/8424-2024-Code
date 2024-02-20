@@ -49,8 +49,6 @@ public class Drive extends SubsystemBase {
     private static double integralGain = 0;
     private static double derivativeGain = 0;
 
-    private ChassisSpeeds desiredChassisSpeeds;
-
     AHRS gyro;
 
     private Field2d field = new Field2d();
@@ -137,7 +135,7 @@ public class Drive extends SubsystemBase {
             leftEncoder.getPosition() * positionConversionFactor,
             rightEncoder.getPosition() * positionConversionFactor);
 
-    field.setRobotPose(getCurrentPose());
+        field.setRobotPose(getCurrentPose());
 
     }
 

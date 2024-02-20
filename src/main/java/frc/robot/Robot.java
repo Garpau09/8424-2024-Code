@@ -40,26 +40,11 @@ public class Robot extends LoggedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
-  //Define the motors
-  private static CANSparkMax leftMotor1 = new CANSparkMax(1, MotorType.kBrushless);
-  private static CANSparkMax leftMotor2 = new CANSparkMax(2, MotorType.kBrushless);
-  private static CANSparkMax rightMotor1 = new CANSparkMax(3, MotorType.kBrushless);
-  private static CANSparkMax rightMotor2 = new CANSparkMax(4, MotorType.kBrushless);
-
-  private static final RelativeEncoder leftEncoder = leftMotor1.getEncoder();
-  private static final RelativeEncoder rightEncoder = rightMotor1.getEncoder();
-
   //private static CANSparkMax shooterMotor = new CANSparkMax(5, MotorType.kBrushless);
   //private static GenericHID leftJoystick = new GenericHID(0);
   //private static GenericHID rightJoystick = new GenericHID(1); 
   private static GenericHID logitechJoystick = new GenericHID(2);
 
-  private static final double gearReduction = 8.45;
-  private static final double circumferenceMeters = Math.PI * 0.1016;
-
-  // leftMotor1 and rightMotor1 are the leader motors
-  private DifferentialDrive diffDrive = new DifferentialDrive(leftMotor1, rightMotor1);
-  
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -87,24 +72,7 @@ public class Robot extends LoggedRobot {
     m_chooser.addOption("crossTheLine", crossTheLine);
     SmartDashboard.putData("Auto choices", m_chooser);
 
-    leftMotor1.restoreFactoryDefaults();
-    leftMotor2.restoreFactoryDefaults();
-    rightMotor1.restoreFactoryDefaults();
-    rightMotor2.restoreFactoryDefaults();
 
-    leftMotor1.setIdleMode(IdleMode.kBrake);
-    leftMotor2.setIdleMode(IdleMode.kBrake);
-    rightMotor1.setIdleMode(IdleMode.kBrake);
-    rightMotor2.setIdleMode(IdleMode.kBrake);
-
-    //Motor 2 will always follow Motor 1
-    //Don't ever tell Motor 2 to drive!
-    leftMotor1.setInverted(true);
-    leftMotor2.follow(leftMotor1);
-    rightMotor2.follow(rightMotor1);
-
-    leftEncoder.setPositionConversionFactor(circumferenceMeters/gearReduction);
-    rightEncoder.setPositionConversionFactor(circumferenceMeters/gearReduction);
   }
 
   /**
@@ -131,7 +99,6 @@ public class Robot extends LoggedRobot {
   public void autonomousInit() {
     m_autoSelected = m_chooser.getSelected();
     System.out.println("Auto selected: " + m_autoSelected);
-    leftEncoder.setPosition(0);
   }
 
   /** This function is called periodically during autonomous. */
@@ -140,13 +107,6 @@ public class Robot extends LoggedRobot {
     switch (m_autoSelected) {
       case crossTheLine:
         // Put custom auto code here
-        SmartDashboard.putNumber("Left Encoder", leftEncoder.getPosition());
-        
-        if(leftEncoder.getPosition() < 1){
-          diffDrive.arcadeDrive(.5, 0);
-        } else{
-          diffDrive.arcadeDrive(0, 0);
-        }
         break;
       case kDefaultAuto:
       // Make your code here!
@@ -164,7 +124,8 @@ public class Robot extends LoggedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    SmartDashboard.putNumber("Left Encoder", leftEncoder.getPosition());
+
+    drive.periodic();
 
     drive.driveRobot(
       ChassisSpeeds.fromFieldRelativeSpeeds(
